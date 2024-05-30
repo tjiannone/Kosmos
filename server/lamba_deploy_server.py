@@ -15,7 +15,7 @@ def lambda_handler(event, context):
     init_script = """#!/bin/bash
                 sudo su -
                 git clone https://github.com/ariskumara/Kosmos-Server.git
-                cd Kosmos-Server
+                cd Kosmos
                 bash Cloak2-Installer.sh"""
     print(init_script)
 
