@@ -17,6 +17,10 @@ def lambda_handler(event, context):
     # TODO implement
     BOT_TOKEN = os.environ.get('TOKEN')
     BOT_CHAT_ID = os.environ.get('CHATID')
+    S3_BUCKET = os.environ.get('S3_BUCKET')
+    APK_FILE = os.environ.get('APK_FILE')
+    TO_ADDRESS = os.environ.get('TO_ADDRESS')
+    FROM_ADDRESS = os.environ.get('FROM_ADDRESS')
     BOT_CHAT_ID = chat_id # Updating the Bot Chat Id to be dynamic instead of static one earlier
     command = command[1:] # Valid input command is /start or /help. however stripping the '/' here as it was having some conflict in execution.
     if command == 'start':
@@ -24,7 +28,7 @@ def lambda_handler(event, context):
     elif command == 'help':
         message = "Here are the available commands: /start, /help, /report and /download"
     elif command =='download':
-        url = create_presigned_url('kosmosgapbucket','kosmos-android-installer.apk',300)
+        url = create_presigned_url(S3_BUCKET,APK_FILE,300)
         print(url)  
         data = {'url': url}
         payload=requests.post('https://cleanuri.com/api/v1/shorten',data=data)
@@ -34,7 +38,7 @@ def lambda_handler(event, context):
     elif command == "report":
         response1 = client.send_email(
         Destination={
-            'ToAddresses': ['kosmosgap@gmail.com']
+            'ToAddresses': [TO_ADDRESS]
         },
         Message={
             'Body': {
@@ -48,7 +52,7 @@ def lambda_handler(event, context):
                 'Data': 'Report: Kosmos Server is not working',
             },
         },
-        Source='aris.kumara@gmail.com'
+        Source=FROM_ADDRESS
         )
         message = "Your report is successfully sent to kosmosgap@gmail.com. We will verify it. If we confirmed there is an issue in our server, we will fix it asap"
     else:
