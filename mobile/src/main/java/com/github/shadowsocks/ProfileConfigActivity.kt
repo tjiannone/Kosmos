@@ -1,23 +1,3 @@
-/*******************************************************************************
- *                                                                             *
- *  Copyright (C) 2017 by Max Lv <max.c.lv@gmail.com>                          *
- *  Copyright (C) 2017 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
- *                                                                             *
- *  This program is free software: you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                        *
- *                                                                             *
- *  This program is distributed in the hope that it will be useful,            *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- *  GNU General Public License for more details.                               *
- *                                                                             *
- *  You should have received a copy of the GNU General Public License          *
- *  along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                             *
- *******************************************************************************/
-
 package com.github.shadowsocks
 
 import android.app.Activity
@@ -58,8 +38,9 @@ class ProfileConfigActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.layout_profile_config)
         ListHolderListener.setup(this)
-        setSupportActionBar(findViewById(R.id.toolbar))
-        supportActionBar!!.apply {
+        // Remove or comment out the setSupportActionBar line to avoid conflict
+        // setSupportActionBar(findViewById(R.id.toolbar))
+        supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
             setHomeAsUpIndicator(R.drawable.ic_navigation_close)
         }
@@ -82,11 +63,11 @@ class ProfileConfigActivity : AppCompatActivity() {
     }
     override fun onOptionsItemSelected(item: MenuItem) = child.onOptionsItemSelected(item)
 
-    val pluginHelp = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        (resultCode, data) ->
+    val pluginHelp = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val (resultCode, data) = result
         if (resultCode == Activity.RESULT_OK) AlertDialog.Builder(this)
-                .setTitle("?")
-                .setMessage(data?.getCharSequenceExtra(PluginContract.EXTRA_HELP_MESSAGE))
-                .show()
+            .setTitle("?")
+            .setMessage(data?.getCharSequenceExtra(PluginContract.EXTRA_HELP_MESSAGE))
+            .show()
     }
 }

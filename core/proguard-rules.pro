@@ -1,4 +1,4 @@
-# Add project specific ProGuard rules here.
+# Add project-specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 #
@@ -20,3 +20,40 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Retrofit
+-keep class retrofit2.** { *; }
+-keep interface retrofit2.** { *; }
+-dontwarn retrofit2.**
+
+# OkHttp
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+
+# Gson
+-keep class com.google.gson.** { *; }
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+
+# Timber (if you are using Timber for logging)
+-keep class timber.log.Timber { *; }
+-keep class timber.log.Timber$* { *; }
+
+# Prevent obfuscation of methods called from native code
+-keepclasseswithmembers class * {
+    native <methods>;
+}
+
+# Keep all annotations, to avoid issues with reflection
+-keepattributes *Annotation*
+
+# Prevent obfuscation of methods used for serialization/deserialization
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Prevent obfuscation of your model classes
+-keep class com.github.shadowsocks.api.ClientConfig { *; }
+

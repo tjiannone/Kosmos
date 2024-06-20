@@ -26,11 +26,12 @@
         android:fullBackupContent="@xml/backup_descriptor"
         android:fullBackupOnly="true"
         android:hasFragileUserData="true"
-        android:label="@string/app_name"
+        android:label="Kosmos"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:banner="@mipmap/banner">
+        android:banner="@mipmap/banner"
+        tools:replace="android:allowBackup">
 
         <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing"
                    android:value="true" />

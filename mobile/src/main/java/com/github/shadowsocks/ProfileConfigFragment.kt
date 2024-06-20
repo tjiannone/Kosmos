@@ -1,23 +1,3 @@
-/*******************************************************************************
- *                                                                             *
- *  Copyright (C) 2017 by Max Lv <max.c.lv@gmail.com>                          *
- *  Copyright (C) 2017 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
- *                                                                             *
- *  This program is free software: you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                        *
- *                                                                             *
- *  This program is distributed in the hope that it will be useful,            *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- *  GNU General Public License for more details.                               *
- *                                                                             *
- *  You should have received a copy of the GNU General Public License          *
- *  along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                             *
- *******************************************************************************/
-
 package com.github.shadowsocks
 
 import android.app.Activity
@@ -39,6 +19,8 @@ import androidx.fragment.app.setFragmentResultListener
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenCreated
 import androidx.preference.*
+import com.github.shadowsocks.api.ApiService
+import com.github.shadowsocks.api.ClientConfig
 import com.github.shadowsocks.database.Profile
 import com.github.shadowsocks.database.ProfileManager
 import com.github.shadowsocks.plugin.*
@@ -51,10 +33,16 @@ import com.github.shadowsocks.widget.ListListener
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import timber.log.Timber
 
 class ProfileConfigFragment : PreferenceFragmentCompat(),
-        Preference.OnPreferenceChangeListener, OnPreferenceDataStoreChangeListener {
+    Preference.OnPreferenceChangeListener, OnPreferenceDataStoreChangeListener {
     companion object PasswordSummaryProvider : Preference.SummaryProvider<EditTextPreference> {
         override fun provideSummary(preference: EditTextPreference) = "\u2022".repeat(preference.text?.length ?: 0)
     }
@@ -79,6 +67,27 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
     private lateinit var pluginConfiguration: PluginConfiguration
     private lateinit var receiver: BroadcastReceiver
     private lateinit var udpFallback: Preference
+
+    // Retrofit instance with logging interceptor
+    private val retrofit: Retrofit by lazy {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        val httpClient = OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
+        Retrofit.Builder()
+            .baseUrl("https://nip1ua8u78.execute-api.ap-southeast-1.amazonaws.com/test/")
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    private val apiService: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
+    }
 
     private fun makeDirt() {
         DataStore.dirty = true
@@ -225,7 +234,7 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
                 val intent = PluginManager.buildIntent(plugin.selectedEntry!!.id, PluginContract.ACTION_CONFIGURE)
                 if (intent.resolveActivity(requireContext().packageManager) == null) showPluginEditor() else {
                     configurePlugin.launch(intent
-                            .putExtra(PluginContract.EXTRA_OPTIONS, pluginConfiguration.getOptions().toString()))
+                        .putExtra(PluginContract.EXTRA_OPTIONS, pluginConfiguration.getOptions().toString()))
                 }
             }
             else -> super.onDisplayPreferenceDialog(preference)
@@ -233,7 +242,7 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
     }
 
     private val configurePlugin = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        (resultCode, data) ->
+            (resultCode, data) ->
         when (resultCode) {
             Activity.RESULT_OK -> {
                 val options = data?.getStringExtra(PluginContract.EXTRA_OPTIONS)
@@ -257,6 +266,37 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
             true
         }
         else -> false
+    }
+
+    private fun fetchConfig() {
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    apiService.getClientConfig().execute()
+                }
+                if (response.isSuccessful) {
+                    val config = response.body()
+                    if (config != null) {
+                        saveConfigLocally(config)
+                        configureProfile(config)
+                    } else {
+                        Timber.e("Failed to get Cloak config: response body is null")
+                    }
+                } else {
+                    Timber.e("Failed to get Cloak config: ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error getting Cloak config")
+            }
+        }
+    }
+
+    private fun saveConfigLocally(config: ClientConfig) {
+        // Implement your method to save the configuration locally
+    }
+
+    private fun configureProfile(config: ClientConfig) {
+        // Implement your method to configure the profile with the fetched configuration
     }
 
     override fun onDetach() {

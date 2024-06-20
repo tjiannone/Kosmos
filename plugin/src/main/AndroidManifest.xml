@@ -1,7 +1,68 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
     <application
-        android:theme="@style/Theme.Shadowsocks">
+        android:theme="@style/AppTheme"
+        tools:replace="android:allowBackup"
+        android:allowBackup= "true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Kosmos"
+        android:supportsRtl="true">
+
+        <!-- Meta-data for shadowsocks plugin version -->
         <meta-data android:name="com.github.shadowsocks.plugin.version"
-                   android:value="2.0.1"/>
+            android:value="2.0.1"/>
+
+        <!-- Provider for the plugin -->
+        <provider
+            android:name="com.github.shadowsocks.plugin.ck_client.BinaryProvider"
+            android:exported="true"
+            android:authorities="com.github.shadowsocks.plugin.ck_client.BinaryProvider">
+            <intent-filter>
+                <action android:name="com.github.shadowsocks.plugin.ACTION_NATIVE_PLUGIN" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.github.shadowsocks.plugin.ACTION_NATIVE_PLUGIN" />
+                <data
+                    android:scheme="plugin"
+                    android:host="com.github.shadowsocks"
+                    android:pathPrefix="/ck-client" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.github.shadowsocks.plugin.id"
+                android:value="ck-client" />
+            <meta-data
+                android:name="com.github.shadowsocks.plugin.default_config"
+                android:value="" />
+        </provider>
+
+        <!-- Activity for configuration -->
+        <activity android:name="com.github.shadowsocks.plugin.ck_client.ConfigActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.github.shadowsocks.plugin.ACTION_CONFIGURE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="plugin"
+                    android:host="com.github.shadowsocks"
+                    android:path="/ck-client" />
+            </intent-filter>
+        </activity>
+
+        <!-- Optional: Help activity -->
+        <activity android:name="com.github.shadowsocks.plugin.ck_client.HelpActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.github.shadowsocks.plugin.ACTION_HELP" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="plugin"
+                    android:host="com.github.shadowsocks"
+                    android:path="/ck-client" />
+            </intent-filter>
+        </activity>
+
     </application>
 </manifest>

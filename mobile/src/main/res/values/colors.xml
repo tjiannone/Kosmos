@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="background_selected">@color/material_primary_100</color>
-    <color name="background_stat">@color/material_primary_300</color>
+    <color name="background_stat">#0000FF</color>
     <color name="material_amber_a700">#ffab00</color>
+    <color name="material_primary_100">#BB86FC</color>
+    <color name="material_primary_800">#3700B3</color>
+    <color name="material_accent_200">#3700B3</color>
+    <color name="material_primary_300">#A45CFF</color>
+    <color name="material_primary_600">#6200EE</color>
+    <color name="light_color_primary">#6200EE</color>
+    <color name="dark_color_primary">#3700B3</color>
+    <color name="color_primary_text">#FF0000</color>
 </resources>

@@ -1,26 +1,7 @@
-/*******************************************************************************
- *                                                                             *
- *  Copyright (C) 2017 by Max Lv <max.c.lv@gmail.com>                          *
- *  Copyright (C) 2017 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
- *                                                                             *
- *  This program is free software: you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                        *
- *                                                                             *
- *  This program is distributed in the hope that it will be useful,            *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- *  GNU General Public License for more details.                               *
- *                                                                             *
- *  You should have received a copy of the GNU General Public License          *
- *  along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                             *
- *******************************************************************************/
-
 package com.github.shadowsocks
 
 import android.content.ActivityNotFoundException
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.RemoteException
 import android.view.KeyCharacterMap
@@ -37,15 +18,18 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.*
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceDataStore
-import com.github.shadowsocks.acl.CustomRulesFragment
 import com.github.shadowsocks.aidl.IShadowsocksService
 import com.github.shadowsocks.aidl.ShadowsocksConnection
 import com.github.shadowsocks.aidl.TrafficStats
+import com.github.shadowsocks.api.ApiService
+import com.github.shadowsocks.api.ClientConfig
 import com.github.shadowsocks.bg.BaseService
+import com.github.shadowsocks.database.Profile
+import com.github.shadowsocks.database.ProfileManager
 import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.preference.OnPreferenceDataStoreChangeListener
-import com.github.shadowsocks.subscription.SubscriptionFragment
 import com.github.shadowsocks.utils.Key
 import com.github.shadowsocks.utils.StartService
 import com.github.shadowsocks.widget.ListHolderListener
@@ -56,10 +40,18 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
-class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPreferenceDataStoreChangeListener,
-        NavigationView.OnNavigationItemSelectedListener {
+class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, SharedPreferences.OnSharedPreferenceChangeListener,
+    NavigationView.OnNavigationItemSelectedListener, OnPreferenceDataStoreChangeListener {
+
     companion object {
         var stateListener: ((BaseService.State) -> Unit)? = null
     }
@@ -86,24 +78,62 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
             }.build())
         }.build()
     }
+
     fun launchUrl(uri: String) = try {
         customTabsIntent.launchUrl(this, uri.toUri())
     } catch (_: ActivityNotFoundException) {
         snackbar(uri).show()
     }
 
-    // service
+    // Retrofit instance with logging interceptor
+    private val retrofit: Retrofit by lazy {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        val httpClient = OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
+        Retrofit.Builder()
+            .baseUrl("https://91tabyobbc.execute-api.us-east-1.amazonaws.com/test/")
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    private val apiService: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
+    }
+
+    // Service
     var state = BaseService.State.Idle
+
     override fun stateChanged(state: BaseService.State, profileName: String?, msg: String?) =
-            changeState(state, msg)
+        changeState(state, msg)
+
+    override fun onServiceConnected(service: IShadowsocksService) = changeState(try {
+        BaseService.State.values()[service.state]
+    } catch (_: RemoteException) {
+        BaseService.State.Idle
+    })
+
+    override fun onServiceDisconnected() = changeState(BaseService.State.Idle)
+
+    override fun onBinderDied() {
+        connection.disconnect(this)
+        connection.connect(this, this)
+    }
+
     override fun trafficUpdated(profileId: Long, stats: TrafficStats) {
         if (profileId == 0L) this@MainActivity.stats.updateTraffic(
-                stats.txRate, stats.rxRate, stats.txTotal, stats.rxTotal)
+            stats.txRate, stats.rxRate, stats.txTotal, stats.rxTotal)
         if (state != BaseService.State.Stopping) {
             (supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ProfilesFragment)
-                    ?.onTrafficUpdated(profileId, stats)
+                ?.onTrafficUpdated(profileId, stats)
         }
     }
+
     override fun trafficPersisted(profileId: Long) {
         ProfilesFragment.instance?.onTrafficPersisted(profileId)
     }
@@ -117,19 +147,64 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
         stateListener?.invoke(state)
     }
 
-    private fun toggle() = if (state.canStop) Core.stopService() else connect.launch(null)
+    private fun setupCloakConfig() {
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    apiService.getClientConfig().execute()
+                }
+                if (response.isSuccessful) {
+                    val config = response.body()
+                    if (config != null) {
+                        val currentProfile = findMatchingProfile(config)
+                        if (currentProfile != null) {
+                            // Use the existing matching profile
+                            Core.switchProfile(currentProfile.id)
+                            Core.startService()
+                            changeState(BaseService.State.Connecting)
+                        } else {
+                            // Create a new profile
+                            configureProfile(config)
+                        }
+                    } else {
+                        Timber.e("Failed to get Cloak config: response body is null")
+                    }
+                } else {
+                    Timber.e("Failed to get Cloak config: ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error getting Cloak config")
+            }
+        }
+    }
+
+    private fun configureProfile(config: ClientConfig) {
+        val newProfile = Profile().apply {
+            name = config.serverName
+            host = config.publicIP
+            remotePort = config.port?.toInt() ?: 443
+            password = config.password ?: ""
+            method = config.encryption ?: "aes-256-gcm"
+            plugin = "ck-client;UID=${config.uid};PublicKey=${config.publicKey};ServerName=${config.serverName};CloakProxyMethod=${config.cloakProxyMethod};ProxyMethod=${config.proxyMethod};EncryptionMethod=${config.encryptionMethod};NumConn=${config.numConn};BrowserSig=${config.browserSig};StreamTimeout=${config.streamTimeout}"
+        }
+        ProfileManager.createProfile(newProfile)
+        Core.switchProfile(newProfile.id)
+        Core.startService()
+        changeState(BaseService.State.Connecting)
+    }
+
+    private fun findMatchingProfile(config: ClientConfig): Profile? {
+        val allProfiles = ProfileManager.getAllProfiles() ?: return null
+        return allProfiles.firstOrNull { profile ->
+            profile.host == config.publicIP &&
+                    profile.remotePort.toString() == config.port &&
+                    profile.password == config.password &&
+                    profile.method == config.encryption &&
+                    profile.plugin == "ck-client;UID=${config.uid};PublicKey=${config.publicKey};ServerName=${config.serverName};CloakProxyMethod=${config.cloakProxyMethod};ProxyMethod=${config.proxyMethod};EncryptionMethod=${config.encryptionMethod};NumConn=${config.numConn};BrowserSig=${config.browserSig};StreamTimeout=${config.streamTimeout}"
+        }
+    }
 
     private val connection = ShadowsocksConnection(true)
-    override fun onServiceConnected(service: IShadowsocksService) = changeState(try {
-        BaseService.State.values()[service.state]
-    } catch (_: RemoteException) {
-        BaseService.State.Idle
-    })
-    override fun onServiceDisconnected() = changeState(BaseService.State.Idle)
-    override fun onBinderDied() {
-        connection.disconnect(this)
-        connection.connect(this, this)
-    }
 
     private val connect = registerForActivityResult(StartService()) {
         if (it) snackbar().setText(R.string.vpn_permission_denied).show()
@@ -168,7 +243,14 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
 
         fab = findViewById(R.id.fab)
         fab.initProgress(findViewById(R.id.fabProgress))
-        fab.setOnClickListener { toggle() }
+        fab.setOnClickListener {
+            if (state == BaseService.State.Connected) {
+                Core.stopService()
+                changeState(BaseService.State.Stopping)
+            } else {
+                setupCloakConfig()
+            }
+        }
         ViewCompat.setOnApplyWindowInsetsListener(fab) { view, insets ->
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom +
@@ -182,12 +264,10 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
         DataStore.publicStore.registerChangeListener(this)
     }
 
-    override fun onPreferenceDataStoreChanged(store: PreferenceDataStore, key: String) {
-        when (key) {
-            Key.serviceMode -> {
-                connection.disconnect(this)
-                connection.connect(this, this)
-            }
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+        if (key == Key.serviceMode) {
+            connection.disconnect(this)
+            connection.connect(this, this)
         }
     }
 
@@ -212,8 +292,6 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
                     launchUrl(getString(R.string.faq_url))
                     return true
                 }
-                R.id.customRules -> displayFragment(CustomRulesFragment())
-                R.id.subscriptions -> displayFragment(SubscriptionFragment())
                 else -> return false
             }
             item.isChecked = true
@@ -228,7 +306,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
 
     override fun onKeyShortcut(keyCode: Int, event: KeyEvent) = when {
         keyCode == KeyEvent.KEYCODE_G && event.hasModifiers(KeyEvent.META_CTRL_ON) -> {
-            toggle()
+            setupCloakConfig()
             true
         }
         keyCode == KeyEvent.KEYCODE_T && event.hasModifiers(KeyEvent.META_CTRL_ON) -> {
@@ -250,5 +328,9 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
         super.onDestroy()
         DataStore.publicStore.unregisterChangeListener(this)
         connection.disconnect(this)
+    }
+
+    override fun onPreferenceDataStoreChanged(store: PreferenceDataStore, key: String) {
+        // Handle preference data store changes if needed
     }
 }

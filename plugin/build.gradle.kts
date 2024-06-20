@@ -8,7 +8,7 @@ plugins {
 setupCommon()
 
 android {
-    namespace = "com.github.shadowsocks.plugin"
+    namespace = "com.github.shadowsocks.plugin.ck_client"
     lint.informational += "GradleDependency"
 }
 
@@ -17,4 +17,5 @@ dependencies {
     api("androidx.core:core-ktx:1.7.0")
     api("androidx.fragment:fragment-ktx:1.5.5")
     api("com.google.android.material:material:1.6.0")
+    implementation("androidx.preference:preference-ktx:1.2.0")
 }

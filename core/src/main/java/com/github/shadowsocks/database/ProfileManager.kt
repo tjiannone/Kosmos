@@ -1,23 +1,3 @@
-/*******************************************************************************
- *                                                                             *
- *  Copyright (C) 2017 by Max Lv <max.c.lv@gmail.com>                          *
- *  Copyright (C) 2017 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
- *                                                                             *
- *  This program is free software: you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                        *
- *                                                                             *
- *  This program is distributed in the hope that it will be useful,            *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- *  GNU General Public License for more details.                               *
- *                                                                             *
- *  You should have received a copy of the GNU General Public License          *
- *  along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                             *
- *******************************************************************************/
-
 package com.github.shadowsocks.database
 
 import android.database.sqlite.SQLiteCantOpenDatabaseException
@@ -34,10 +14,6 @@ import java.io.InputStream
 import java.io.Serializable
 import java.sql.SQLException
 
-/**
- * SQLExceptions are not caught (and therefore will cause crash) for insert/update transactions
- * to ensure we are in a consistent state.
- */
 object ProfileManager {
     interface Listener {
         fun onAdd(profile: Profile)
@@ -74,7 +50,7 @@ object ProfileManager {
             Profile.parseJson(JsonStreamParser(json.bufferedReader()).asSequence().single(), feature) {
                 if (replace) {
                     lazyClear.value
-                    // if two profiles has the same address, treat them as the same profile and copy stats over
+                    // if two profiles have the same address, treat them as the same profile and copy stats over
                     profiles?.get(it.formattedAddress)?.apply {
                         it.tx = tx
                         it.rx = rx
@@ -155,5 +131,10 @@ object ProfileManager {
     } catch (ex: SQLException) {
         Timber.w(ex)
         null
+    }
+
+    fun getCurrentActiveProfile(): Profile? {
+        val profiles = getActiveProfiles()
+        return profiles?.firstOrNull { it.id == DataStore.profileId }
     }
 }

@@ -1,11 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="proxy_cat">Server Settings</string>
-    <string name="feature_cat">Feature Settings</string>
-    <string name="unsaved_changes_prompt">Changes not saved. Do you want to save?</string>
-    <string name="yes">Yes</string>
-    <string name="no">No</string>
+    <string name="advanced">Advanced</string>
     <string name="apply">Apply</string>
-    <string name="browse">Browse…</string>
-    <string name="file_manager_missing">Please install a file manager like MiXplorer</string>
+    <string name="auto_connect_summary_v24">Auto connect summary</string>
+    <string name="browse">Browse</string>
+    <string name="feature_cat">Feature Category</string>
+    <string name="file_manager_missing">File manager missing</string>
+    <string name="invalid_server">Invalid server</string>
+    <string name="night_mode">Night mode</string>
+    <string name="night_mode_auto">Auto</string>
+    <string name="night_mode_off">Off</string>
+    <string name="night_mode_on">On</string>
+    <string name="night_mode_system">System</string>
+    <string name="no">No</string>
+    <string name="proxy_cat">Proxy Category</string>
+    <string name="received">Received</string>
+    <string name="sent">Sent</string>
+    <string name="tcp_fastopen_failure">TCP Fast Open failure</string>
+    <string name="tcp_fastopen_summary">TCP Fast Open summary</string>
+    <string name="tcp_fastopen_summary_unsupported">TCP Fast Open unsupported</string>
+    <string name="unsaved_changes_prompt">Unsaved changes prompt</string>
+    <string name="yes">Yes</string>
+    <string name="cloak_proxy_method">Proxy Method</string>
+    <string name="cloak_encryption_method">Encryption Method</string>
+    <string name="cloak_transport">Transport</string>
+    <string name="cloak_uid">UID</string>
+    <string name="cloak_public_key">Public Key</string>
+    <string name="cloak_server_name">Server Name</string>
+    <string name="cloak_alternative_names">Alternative Names</string>
+    <string name="cloak_cdn_origin_host">CDN Origin Host</string>
+    <string name="cloak_cdn_ws_url_path">CDN WS URL Path</string>
+    <string name="cloak_browser_sig">Browser Signature</string>
+    <string name="cloak_num_conn">Number of Connections</string>
+    <string name="cloak_stream_timeout">Stream Timeout</string>
+    <string name="cloak_keepalive">Keep Alive</string>
+    <string name="app_name">Shadowsocks Plugin</string>
 </resources>
+
