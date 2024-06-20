@@ -34,7 +34,7 @@ def lambda_handler(event, context):
         payload=requests.post('https://cleanuri.com/api/v1/shorten',data=data)
         short_url=payload.json()['result_url']
         print("The short url is : {}".format(short_url))
-        message = "Here is the link to download that is valid for 60 mins: " + short_url
+        message = "Here is the link to download that is valid for 5 mins: " + short_url
     elif command == "report":
         response1 = client.send_email(
         Destination={
@@ -44,7 +44,7 @@ def lambda_handler(event, context):
             'Body': {
                 'Text': {
                     'Charset': 'UTF-8',
-                    'Data': 'We have received report that Kosmos server is not working',
+                    'Data': 'You received report that Kosmos server is not working',
                 }
             },
             'Subject': {
@@ -54,7 +54,7 @@ def lambda_handler(event, context):
         },
         Source=FROM_ADDRESS
         )
-        message = "Your report is successfully sent to kosmosgap@gmail.com. We will verify it. If we confirmed there is an issue in our server, we will fix it asap"
+        message = "Your report is successfully sent to info@kosmosgap.com We will verify it. If we confirmed there is an issue in our server, we will fix it asap"
     else:
         message = "I'm sorry, I didn't understand that command. Please try again."
     send_text = 'https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage?chat_id=' + BOT_CHAT_ID + '&parse_mode=HTML&text=' + message
