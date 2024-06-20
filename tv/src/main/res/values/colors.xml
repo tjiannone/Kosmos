@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="material_accent_200">#FF4081</color>
+    <color name="color_primary">#6200EE</color>
+    <color name="color_primary_dark">#3700B3</color>
+    <color name="material_primary_100">#BB86FC</color>
+    <color name="material_primary_300">#A45CFF</color>
+    <color name="material_primary_500">#6200EE</color>
+    <color name="material_primary_600">#6200EE</color>
+    <color name="material_primary_800">#3700B3</color>
+</resources>

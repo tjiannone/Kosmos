@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="hosts_summary">
+        <item quantity="one">%d host</item>
+        <item quantity="other">%d hosts</item>
+    </plurals>
+    <plurals name="removed">
+        <item quantity="one">%d item removed</item>
+        <item quantity="other">%d items removed</item>
+    </plurals>
+</resources>

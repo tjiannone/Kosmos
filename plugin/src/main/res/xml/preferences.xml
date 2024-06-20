@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:key="ProxyMethod"
+        android:title="Proxy Method"
+        android:entries="@array/proxy_methods"
+        android:entryValues="@array/proxy_methods_values" />
+    <EditTextPreference
+        android:key="UID"
+        android:title="UID"
+        android:summary="Enter UID" />
+    <EditTextPreference
+        android:key="PublicKey"
+        android:title="Public Key"
+        android:summary="Enter Public Key" />
+    <!-- Add other preferences here as needed -->
+</PreferenceScreen>
