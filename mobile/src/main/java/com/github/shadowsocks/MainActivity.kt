@@ -93,10 +93,11 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
 
         val httpClient = OkHttpClient.Builder()
             .addInterceptor(logging)
+            .addInterceptor(BasicAuthInterceptor("admin", "password")) // Add your interceptor here
             .build()
 
         Retrofit.Builder()
-            .baseUrl("https://91tabyobbc.execute-api.us-east-1.amazonaws.com/test/")
+            .baseUrl("https://3q8366ztj4.execute-api.us-east-1.amazonaws.com/test/")
             .client(httpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

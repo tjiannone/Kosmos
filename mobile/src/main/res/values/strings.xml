@@ -36,4 +36,6 @@
     <string name="service_mode_transproxy">Transparent Proxy Mode</string>
     <string name="app_name">Kosmos: Global Access Proxy</string>
     <string name="vpn_error">VPN Error: %1$s</string>
+    <string name="home">Home</string>
+    <string name="team_logo_desc">Team Logo</string>
 </resources>

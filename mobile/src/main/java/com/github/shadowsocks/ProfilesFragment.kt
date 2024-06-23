@@ -1,30 +1,9 @@
-/*******************************************************************************
- *                                                                             *
- *  Copyright (C) 2017 by Max Lv <max.c.lv@gmail.com>                          *
- *  Copyright (C) 2017 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
- *                                                                             *
- *  This program is free software: you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                        *
- *                                                                             *
- *  This program is distributed in the hope that it will be useful,            *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- *  GNU General Public License for more details.                               *
- *                                                                             *
- *  You should have received a copy of the GNU General Public License          *
- *  along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                             *
- *******************************************************************************/
-
 package com.github.shadowsocks
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
 import android.text.format.Formatter
 import android.util.LongSparseArray
@@ -55,7 +34,6 @@ import com.github.shadowsocks.utils.OpenJson
 import com.github.shadowsocks.utils.SaveJson
 import com.github.shadowsocks.utils.readableMessage
 import com.github.shadowsocks.widget.ListHolderListener
-import com.github.shadowsocks.widget.MainListListener
 import com.github.shadowsocks.widget.UndoSnackbarManager
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -82,7 +60,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
     private val isEnabled get() = (activity as MainActivity).state.let { it.canStop || it == BaseService.State.Stopped }
 
     private fun isProfileEditable(id: Long) =
-            (activity as MainActivity).state == BaseService.State.Stopped || id !in Core.activeProfileIds
+        (activity as MainActivity).state == BaseService.State.Stopped || id !in Core.activeProfileIds
 
     class QRCodeDialog() : DialogFragment() {
         constructor(url: String) : this() {
@@ -117,7 +95,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
     }
 
     inner class ProfileViewHolder(view: View) : RecyclerView.ViewHolder(view),
-            View.OnClickListener, PopupMenu.OnMenuItemClickListener {
+        View.OnClickListener, PopupMenu.OnMenuItemClickListener {
         internal lateinit var item: Profile
 
         private val text1 = itemView.findViewById<TextView>(android.R.id.text1)
@@ -169,7 +147,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             }.joinToString("\n")
             val context = requireContext()
             traffic.text = if (tx <= 0 && rx <= 0) null else getString(R.string.traffic,
-                    Formatter.formatFileSize(context, tx), Formatter.formatFileSize(context, rx))
+                Formatter.formatFileSize(context, tx), Formatter.formatFileSize(context, rx))
 
             if (item.id == DataStore.profileId) {
                 itemView.isSelected = true
@@ -207,7 +185,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             R.id.action_export_clipboard -> {
                 val success = Core.trySetPrimaryClip(this.item.toString(), true)
                 (activity as MainActivity).snackbar().setText(
-                        if (success) R.string.action_export_msg else R.string.action_export_err).show()
+                    if (success) R.string.action_export_msg else R.string.action_export_err).show()
                 true
             }
             else -> false
@@ -224,7 +202,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
 
         override fun onBindViewHolder(holder: ProfileViewHolder, position: Int) = holder.bind(profiles[position])
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileViewHolder = ProfileViewHolder(
-                LayoutInflater.from(parent.context).inflate(R.layout.layout_profile, parent, false))
+            LayoutInflater.from(parent.context).inflate(R.layout.layout_profile, parent, false))
 
         override fun getItemCount(): Int = profiles.size
         override fun getItemId(position: Int): Long = profiles[position].id
@@ -340,21 +318,15 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
     override fun onQueryTextSubmit(query: String): Boolean = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-            inflater.inflate(R.layout.layout_list, container, false)
+        inflater.inflate(R.layout.layout_list, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         ViewCompat.setOnApplyWindowInsetsListener(view, ListHolderListener)
-        toolbar.setTitle(R.string.profiles)
-        toolbar.inflateMenu(R.menu.profile_manager_menu)
-        toolbar.setOnMenuItemClickListener(this)
-        val searchView = toolbar.findViewById<SearchView>(R.id.action_search)
-        searchView.setOnQueryTextListener(this)
-        searchView.queryHint = getString(android.R.string.search_go)
+        toolbar.setTitle(R.string.home) // Change title to Home
 
         ProfileManager.ensureNotEmpty()
         profilesList = view.findViewById(R.id.list)
-        ViewCompat.setOnApplyWindowInsetsListener(profilesList, MainListListener)
         profilesList.layoutManager = layoutManager
         profilesList.addItemDecoration(DividerItemDecoration(context, layoutManager.orientation))
         layoutManager.scrollToPosition(profilesAdapter.profiles.indexOfFirst { it.id == DataStore.profileId })
@@ -366,14 +338,14 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         ProfileManager.listener = profilesAdapter
         undoManager = UndoSnackbarManager(activity as MainActivity, profilesAdapter::undo, profilesAdapter::commit)
         ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-                ItemTouchHelper.START) {
+            ItemTouchHelper.START) {
             override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int =
-                    if (isProfileEditable((viewHolder as ProfileViewHolder).item.id)) {
-                        super.getSwipeDirs(recyclerView, viewHolder)
-                    } else 0
+                if (isProfileEditable((viewHolder as ProfileViewHolder).item.id)) {
+                    super.getSwipeDirs(recyclerView, viewHolder)
+                } else 0
 
             override fun getDragDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int =
-                    if (isEnabled) super.getDragDirs(recyclerView, viewHolder) else 0
+                if (isEnabled) super.getDragDirs(recyclerView, viewHolder) else 0
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val index = viewHolder.bindingAdapterPosition
@@ -392,93 +364,26 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
                 profilesAdapter.commitMove()
             }
         }).attachToRecyclerView(profilesList)
+
+        // Hide profiles list
+        profilesList.visibility = View.GONE
+
+        // Set background color to black and add team logo
+        view.setBackgroundColor(Color.BLACK)
+        val logoImageView = ImageView(context).apply {
+            setImageResource(R.drawable.team_logo) // Ensure you have the team logo image in the drawable folder
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        (view as ViewGroup).addView(logoImageView)
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_scan_qr_code -> {
-                startActivity(Intent(context, ScannerActivity::class.java))
-                true
-            }
-            R.id.action_import_clipboard -> {
-                try {
-                    val profiles = Profile.findAllUrls(
-                            Core.clipboard.primaryClip!!.getItemAt(0).text,
-                            Core.currentProfile?.main
-                    ).toList()
-                    if (profiles.isNotEmpty()) {
-                        profiles.forEach { ProfileManager.createProfile(it) }
-                        (activity as MainActivity).snackbar().setText(R.string.action_import_msg).show()
-                        return true
-                    }
-                } catch (exc: Exception) {
-                    Timber.d(exc)
-                }
-                (activity as MainActivity).snackbar().setText(R.string.action_import_err).show()
-                true
-            }
-            R.id.action_import_file -> {
-                startFilesForResult(importProfiles)
-                true
-            }
-            R.id.action_replace_file -> {
-                startFilesForResult(replaceProfiles)
-                true
-            }
-            R.id.action_manual_settings -> {
-                startConfig(ProfileManager.createProfile(
-                        Profile().also { Core.currentProfile?.main?.copyFeatureSettingsTo(it) }))
-                true
-            }
-            R.id.action_export_clipboard -> {
-                val profiles = ProfileManager.getActiveProfiles()
-                val success = profiles != null && Core.trySetPrimaryClip(profiles.joinToString("\n"), true)
-                (activity as MainActivity).snackbar().setText(
-                        if (success) R.string.action_export_msg else R.string.action_export_err).show()
-                true
-            }
-            R.id.action_export_file -> {
-                startFilesForResult(exportProfiles)
-                true
-            }
-            else -> false
-        }
-    }
-
-    private fun startFilesForResult(launcher: ActivityResultLauncher<String>) {
-        try {
-            return launcher.launch("")
-        } catch (_: ActivityNotFoundException) {
-        } catch (_: SecurityException) {
-        }
-        (activity as MainActivity).snackbar(getString(R.string.file_manager_missing)).show()
-    }
-
-    private fun importOrReplaceProfiles(dataUris: List<Uri>, replace: Boolean = false) {
-        if (dataUris.isEmpty()) return
-        val activity = activity as MainActivity
-        try {
-            ProfileManager.createProfilesFromJson(dataUris.asSequence().map {
-                activity.contentResolver.openInputStream(it)
-            }.filterNotNull(), replace)
-        } catch (e: Exception) {
-            activity.snackbar(e.readableMessage).show()
-        }
-    }
-    private val importProfiles = registerForActivityResult(OpenJson) { importOrReplaceProfiles(it) }
-    private val replaceProfiles = registerForActivityResult(OpenJson) { importOrReplaceProfiles(it, true) }
-    private val exportProfiles = registerForActivityResult(SaveJson) { data ->
-        if (data != null) ProfileManager.serializeToJson()?.let { profiles ->
-            val activity = activity as MainActivity
-            try {
-                activity.contentResolver.openOutputStream(data)!!.bufferedWriter().use {
-                    it.write(profiles.toString(2))
-                }
-            } catch (e: Exception) {
-                Timber.w(e)
-                activity.snackbar(e.readableMessage).show()
-            }
-        }
+        // Remove all actions related to the deleted menu items
+        return false
     }
 
     fun onTrafficUpdated(profileId: Long, stats: TrafficStats) {
