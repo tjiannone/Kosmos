@@ -1,7 +1,10 @@
 package com.github.shadowsocks
 
+import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.os.RemoteException
 import android.view.KeyCharacterMap
@@ -139,10 +142,11 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
         ProfilesFragment.instance?.onTrafficPersisted(profileId)
     }
 
+    @SuppressLint("StringFormatInvalid")
     private fun changeState(state: BaseService.State, msg: String? = null, animate: Boolean = true) {
         fab.changeState(state, this.state, animate)
         stats.changeState(state, animate)
-        if (msg != null) snackbar(getString(R.string.vpn_error, msg)).show()
+        if (msg != null) snackbar(getString(R.string.proxy_error, msg)).show()
         this.state = state
         ProfilesFragment.instance?.profilesAdapter?.notifyDataSetChanged()  // refresh button enabled state
         stateListener?.invoke(state)
@@ -208,7 +212,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
     private val connection = ShadowsocksConnection(true)
 
     private val connect = registerForActivityResult(StartService()) {
-        if (it) snackbar().setText(R.string.vpn_permission_denied).show()
+        if (it) snackbar().setText(R.string.proxy_permission_denied).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -284,13 +288,19 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
                     displayFragment(ProfilesFragment())
                     connection.bandwidthTimeout = connection.bandwidthTimeout   // request stats update
                 }
-                R.id.globalSettings -> displayFragment(GlobalSettingsFragment())
+
                 R.id.about -> {
                     Firebase.analytics.logEvent("about") { }
                     displayFragment(AboutFragment())
                 }
                 R.id.faq -> {
-                    launchUrl(getString(R.string.faq_url))
+                    val faqUrl = getString(R.string.faq_url)
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(faqUrl))
+                        startActivity(intent)
+                    } catch (e: ActivityNotFoundException) {
+                        snackbar(faqUrl).show()
+                    }
                     return true
                 }
                 else -> return false

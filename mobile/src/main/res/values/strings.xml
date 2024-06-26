@@ -38,4 +38,5 @@
     <string name="vpn_error">VPN Error: %1$s</string>
     <string name="home">Home</string>
     <string name="team_logo_desc">Team Logo</string>
+    <string name="proxy_error">Proxy Error</string>
 </resources>

@@ -48,7 +48,7 @@ class HttpsTest : ViewModel() {
         open fun retrieve(setStatus: (CharSequence) -> Unit, errorCallback: (String) -> Unit) = setStatus(status)
 
         object Idle : Status() {
-            override val status get() = app.getText(R.string.vpn_connected)
+            override val status get() = app.getText(R.string.proxy_active)
         }
         object Testing : Status() {
             override val status get() = app.getText(R.string.connection_test_testing)

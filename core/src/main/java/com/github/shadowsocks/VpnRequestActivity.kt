@@ -50,7 +50,7 @@ class VpnRequestActivity : AppCompatActivity() {
     }
 
     private val connect = registerForActivityResult(StartService()) {
-        if (it) Toast.makeText(this, R.string.vpn_permission_denied, Toast.LENGTH_LONG).show()
+        if (it) Toast.makeText(this, R.string.proxy_permission_denied, Toast.LENGTH_LONG).show()
         finish()
     }
 

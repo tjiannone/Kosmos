@@ -46,7 +46,7 @@
   <string name="edit_subscription">Edit Subscription</string>
   <string name="enc_method">Encryption Method</string>
   <string name="faq">FAQ</string>
-  <string name="faq_url">FAQ URL</string>
+  <string name="faq_url">https://www.kosmosgap.com/#faq</string>
   <string name="forward_success">Forward Success</string>
   <string name="ipv6">IPv6</string>
   <string name="ipv6_summary">IPv6 Summary</string>
@@ -116,9 +116,9 @@
   <string name="udp_fallback">UDP Fallback</string>
   <string name="undo">Undo</string>
   <string name="update_subscription">Update Subscription</string>
-  <string name="vpn_connected">VPN Connected</string>
-  <string name="vpn_error">VPN Error</string>
-  <string name="vpn_permission_denied">VPN Permission Denied</string>
+  <string name="proxy_active">Proxy Active</string>
+  <string name="proxy_error">Proxy Error</string>
+  <string name="proxy_permission_denied">Proxy Permission Denied</string>
   <string name="service_mode_proxy">Proxy Mode</string>
   <string name="service_mode_vpn">VPN Mode</string>
   <string name="service_mode_transproxy">Transparent Proxy Mode</string>

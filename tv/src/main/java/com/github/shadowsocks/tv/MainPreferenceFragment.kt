@@ -223,7 +223,7 @@ class MainPreferenceFragment : LeanbackPreferenceFragmentCompat(), ShadowsocksCo
     }
 
     private val connect = registerForActivityResult(StartService()) {
-        if (it) Toast.makeText(requireContext(), R.string.vpn_permission_denied, Toast.LENGTH_SHORT).show()
+        if (it) Toast.makeText(requireContext(), R.string.proxy_permission_denied, Toast.LENGTH_SHORT).show()
     }
     private val replaceProfiles = registerForActivityResult(OpenJson) { dataUris ->
         if (dataUris.isEmpty()) return@registerForActivityResult
