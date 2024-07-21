@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.os.RemoteException
+import android.util.Log
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MenuItem
@@ -33,7 +34,8 @@ import com.github.shadowsocks.database.Profile
 import com.github.shadowsocks.database.ProfileManager
 import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.preference.OnPreferenceDataStoreChangeListener
-import com.github.shadowsocks.utils.Key
+import com.github.shadowsocks.utils.EncryptionUtils
+import com.github.shadowsocks.utils.Key as AppKey // Alias to avoid conflict
 import com.github.shadowsocks.utils.StartService
 import com.github.shadowsocks.widget.ListHolderListener
 import com.github.shadowsocks.widget.ServiceButton
@@ -51,6 +53,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
+import java.security.Key as SecurityKey // Alias to avoid conflict
 
 class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, SharedPreferences.OnSharedPreferenceChangeListener,
     NavigationView.OnNavigationItemSelectedListener, OnPreferenceDataStoreChangeListener {
@@ -91,7 +94,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
     // Retrofit instance with logging interceptor
     private val retrofit: Retrofit by lazy {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
 
         val httpClient = OkHttpClient.Builder()
@@ -152,7 +155,10 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
         stateListener?.invoke(state)
     }
 
+    private lateinit var encryptionKey: SecurityKey
+
     private fun setupCloakConfig() {
+        encryptionKey = EncryptionUtils.generateKey()
         lifecycleScope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
@@ -192,6 +198,11 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
             method = config.encryption ?: "aes-256-gcm"
             plugin = "ck-client;UID=${config.uid};PublicKey=${config.publicKey};ServerName=${config.serverName};CloakProxyMethod=${config.cloakProxyMethod};ProxyMethod=${config.proxyMethod};EncryptionMethod=${config.encryptionMethod};NumConn=${config.numConn};BrowserSig=${config.browserSig};StreamTimeout=${config.streamTimeout}"
         }
+        val encryptedProfile = EncryptionUtils.encryptProfile(newProfile.toString(), encryptionKey)
+        if (BuildConfig.DEBUG) {
+            Log.d("MainActivity", "Encrypted new profile: $encryptedProfile")
+        }
+
         ProfileManager.createProfile(newProfile)
         Core.switchProfile(newProfile.id)
         Core.startService()
@@ -201,6 +212,12 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
     private fun findMatchingProfile(config: ClientConfig): Profile? {
         val allProfiles = ProfileManager.getAllProfiles() ?: return null
         return allProfiles.firstOrNull { profile ->
+            val encryptedProfile = EncryptionUtils.encryptProfile(profile.toString(), encryptionKey)
+            val decryptedProfile = EncryptionUtils.decryptProfile(encryptedProfile, encryptionKey)
+            if (BuildConfig.DEBUG) {
+                Log.d("MainActivity", "Encrypted Profile: $encryptedProfile")
+                Log.d("EncryptionUtils", "Decrypted Profile: $decryptedProfile")
+            }
             profile.host == config.publicIP &&
                     profile.remotePort.toString() == config.port &&
                     profile.password == config.password &&
@@ -270,7 +287,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, Shared
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
-        if (key == Key.serviceMode) {
+        if (key == AppKey.serviceMode) {
             connection.disconnect(this)
             connection.connect(this, this)
         }

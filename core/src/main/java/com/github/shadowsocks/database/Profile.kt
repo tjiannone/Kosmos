@@ -1,23 +1,3 @@
-/*******************************************************************************
- *                                                                             *
- *  Copyright (C) 2017 by Max Lv <max.c.lv@gmail.com>                          *
- *  Copyright (C) 2017 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
- *                                                                             *
- *  This program is free software: you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                        *
- *                                                                             *
- *  This program is distributed in the hope that it will be useful,            *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- *  GNU General Public License for more details.                               *
- *                                                                             *
- *  You should have received a copy of the GNU General Public License          *
- *  along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                             *
- *******************************************************************************/
-
 package com.github.shadowsocks.database
 
 import android.annotation.TargetApi
@@ -32,6 +12,7 @@ import com.github.shadowsocks.plugin.PluginOptions
 import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.utils.Key
 import com.github.shadowsocks.utils.parsePort
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -48,52 +29,48 @@ import java.util.*
 @Entity
 @Parcelize
 data class Profile(
-        @PrimaryKey(autoGenerate = true)
-        var id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    var id: Long = 0,
 
-        // user configurable fields
-        var name: String? = "",
+    // user configurable fields
+    var name: String? = "",
 
-        var host: String = "example.shadowsocks.org",
-        var remotePort: Int = 8388,
-        var password: String = "u1rRWTssNv0p",
-        var method: String = "aes-256-cfb",
+    var host: String = "example.shadowsocks.org",
+    var remotePort: Int = 8388,
+    var password: String = "u1rRWTssNv0p",
+    var method: String = "aes-256-cfb",
 
-        var route: String = "all",
-        var remoteDns: String = "dns.google",
-        var proxyApps: Boolean = false,
-        var bypass: Boolean = false,
-        var udpdns: Boolean = false,
-        var ipv6: Boolean = false,
-        @TargetApi(28)
-        var metered: Boolean = false,
-        var individual: String = "",
-        var plugin: String? = null,
-        var udpFallback: Long? = null,
+    var route: String = "all",
+    var remoteDns: String = "dns.google",
+    var proxyApps: Boolean = false,
+    var bypass: Boolean = false,
+    var udpdns: Boolean = false,
+    var ipv6: Boolean = false,
+    @TargetApi(28)
+    var metered: Boolean = false,
+    var individual: String = "",
+    var plugin: String? = null,
+    var udpFallback: Long? = null,
 
-        // managed fields
-        var subscription: SubscriptionStatus = SubscriptionStatus.UserConfigured,
-        var tx: Long = 0,
-        var rx: Long = 0,
-        var userOrder: Long = 0,
+    // managed fields
+    var subscription: SubscriptionStatus = SubscriptionStatus.UserConfigured,
+    var tx: Long = 0,
+    var rx: Long = 0,
+    var userOrder: Long = 0,
 
-
-        @Ignore // not persisted in db, only used by direct boot
-        var dirty: Boolean = false
+    @Ignore // not persisted in db, only used by direct boot
+    var dirty: Boolean = false
 ) : Parcelable, Serializable {
     enum class SubscriptionStatus(val persistedValue: Int) {
         UserConfigured(0),
         Active(1),
-        /**
-         * This profile is no longer present in subscriptions.
-         */
-        Obsolete(2),
-        ;
+        Obsolete(2);
 
         companion object {
             @JvmStatic
             @TypeConverter
             fun of(value: Int) = values().single { it.persistedValue == value }
+
             @JvmStatic
             @TypeConverter
             fun toInt(status: SubscriptionStatus) = status.persistedValue
@@ -102,8 +79,9 @@ data class Profile(
 
     companion object {
         private const val serialVersionUID = 1L
+
         private val pattern =
-                """(?i)ss://[-a-zA-Z0-9+&@#/%?=.~*'()|!:,;_\[\]]*[-a-zA-Z0-9+&@#/%=.~*'()|\[\]]""".toRegex()
+            """(?i)ss://[-a-zA-Z0-9+&@#/%?=.~*'()|!:,;_\[\]]*[-a-zA-Z0-9+&@#/%=.~*'()|\[\]]""".toRegex()
         private val userInfoPattern = "^(.+?):(.*)$".toRegex()
         private val legacyPattern = "^(.+?):(.*)@(.+?):(\\d+?)$".toRegex()
 
@@ -128,7 +106,7 @@ data class Profile(
                     }
                 } else {
                     val match = userInfoPattern.matchEntire(String(Base64.decode(uri.userInfo,
-                            Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE)))
+                        Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE)))
                     if (match != null) {
                         val profile = Profile()
                         feature?.copyFeatureSettingsTo(profile)
@@ -204,7 +182,7 @@ data class Profile(
                         proxyApps = it["enabled"].optBoolean ?: proxyApps
                         bypass = it["bypass"].optBoolean ?: bypass
                         individual = (it["android_list"] as? JsonArray)?.asIterable()?.mapNotNull { it.optString }
-                                ?.joinToString("\n") ?: individual
+                            ?.joinToString("\n") ?: individual
                     }
                     udpdns = json["udpdns"].optBoolean ?: udpdns
                     (json["udp_fallback"] as? JsonObject)?.let { tryParse(it, true) }?.also { fallbackMap[this] = it }
@@ -218,7 +196,6 @@ data class Profile(
                         if (profile != null) add(profile) else for ((_, value) in json.entrySet()) process(value)
                     }
                     is JsonArray -> json.asIterable().forEach(this::process)
-                    // ignore other types
                 }
             }
 
@@ -246,6 +223,14 @@ data class Profile(
                 }
                 finalize(create)
             }
+        }
+
+        fun fromJson(json: String): Profile {
+            return Gson().fromJson(json, Profile::class.java)
+        }
+
+        fun toJson(profile: Profile): String {
+            return Gson().toJson(profile)
         }
     }
 
@@ -279,8 +264,10 @@ data class Profile(
         fun deleteAll(): Int
     }
 
-    val formattedAddress get() = (if (host.contains(":")) "[%s]:%d" else "%s:%d").format(host, remotePort)
-    val formattedName get() = if (name.isNullOrEmpty()) formattedAddress else name!!
+    val formattedAddress
+        get() = (if (host.contains(":")) "[%s]:%d" else "%s:%d").format(host, remotePort)
+    val formattedName
+        get() = if (name.isNullOrEmpty()) formattedAddress else name!!
 
     fun copyFeatureSettingsTo(profile: Profile) {
         profile.route = route
@@ -293,12 +280,14 @@ data class Profile(
     }
 
     fun toUri(): Uri {
-        val auth = Base64.encodeToString("$method:$password".toByteArray(),
-                Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE)
+        val auth = Base64.encodeToString(
+            "$method:$password".toByteArray(),
+            Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE
+        )
         val wrappedHost = if (host.contains(':')) "[$host]" else host
         val builder = Uri.Builder()
-                .scheme("ss")
-                .encodedAuthority("$auth@$wrappedHost:$remotePort")
+            .scheme("ss")
+            .encodedAuthority("$auth@$wrappedHost:$remotePort")
         val configuration = PluginConfiguration(plugin ?: "")
         if (configuration.selected.isNotEmpty()) {
             builder.appendQueryParameter(Key.plugin, configuration.getOptions().toString(false))
@@ -330,7 +319,6 @@ data class Profile(
             put("enabled", proxyApps)
             if (proxyApps) {
                 put("bypass", bypass)
-                // android_ prefix is used because package names are Android specific
                 put("android_list", JSONArray(individual.split("\n")))
             }
         })
@@ -362,9 +350,7 @@ data class Profile(
     fun deserialize() {
         check(id == 0L || DataStore.editingId == id)
         DataStore.editingId = null
-        // It's assumed that default values are never used, so 0/false/null is always used even if that isn't the case
         name = DataStore.privateStore.getString(Key.name) ?: ""
-        // It's safe to trim the hostname, as we expect no leading or trailing whitespaces here
         host = (DataStore.privateStore.getString(Key.host) ?: "").trim()
         remotePort = parsePort(DataStore.privateStore.getString(Key.remotePort), 8388, 1)
         password = DataStore.privateStore.getString(Key.password) ?: ""
